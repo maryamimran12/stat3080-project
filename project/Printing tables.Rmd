@@ -1,0 +1,217 @@
+---
+title: "Printed tables"
+output: pdf_document
+fontsize: 12pt
+geometry: margin=1in
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, highlight=FALSE, message=FALSE)
+```
+
+```{r, warning=FALSE}
+library(tidyverse)
+library(dslabs)
+library(janitor)
+library(knitr)
+
+temp_carbon2 <- temp_carbon %>%
+  mutate(decade = year - year %% 10) %>%
+  filter(decade >= 1900 & decade <= 2000)
+
+table1 <- temp_carbon2 %>%
+  group_by(decade) %>%
+  summarize(minco2 = min(carbon_emissions, na.rm = TRUE),
+            medco2 = median(carbon_emissions, na.rm = TRUE),
+            meanco2 = mean(carbon_emissions, na.rm = TRUE),
+            sdco2 = sd(carbon_emissions, na.rm = TRUE),
+            maxco2 = max(carbon_emissions, na.rm = TRUE)) 
+
+table2 <- temp_carbon2 %>%
+  group_by(decade) %>%
+  summarize(minco2 = min(carbon_emissions, na.rm = TRUE),
+            medco2 = median(carbon_emissions, na.rm = TRUE),
+            meanco2 = mean(carbon_emissions, na.rm = TRUE),
+            sdco2 = sd(carbon_emissions, na.rm = TRUE),
+            maxco2 = max(carbon_emissions, na.rm = TRUE),
+            mintempa = min(temp_anomaly, na.rm = TRUE),
+            medtempa = median(temp_anomaly, na.rm = TRUE),
+            meantempa = mean(temp_anomaly, na.rm = TRUE),
+            sdtempa = sd(temp_anomaly, na.rm = TRUE),
+            maxtempa = max(temp_anomaly, na.rm = TRUE)) 
+
+table3 <- data.frame(variable.name = c("Year", 
+                                       "Global temperature anomaly",
+                                       "Land temperature anomaly",
+                                       "Ocean temperature anomaly",
+                                       "Carbon emissions"),
+                    description = c("Year the measurement was taken", 
+                                    "Global annual mean temperature anomaly relative to the 20th century mean temperature in Celsius",
+                                    "Annual mean temperature anomaly on land relative to the 20th century mean temperature in Celsius",
+                                    "Annual mean temperature anomaly over oceans relative to the 20th century mean temperature in Celsius",
+                                    "Annual carbon emissions in millions of metric tons"))
+```
+
+
+## Printed tibble (numeric)
+```{r}
+table1
+```
+
+
+\vspace{24pt}
+
+## Printed kable (numeric)
+```{r}
+table1 %>%
+  kable()
+```
+
+
+\vspace{24pt}
+
+## Printed kable with variable names and caption (numeric)
+```{r}
+table1 %>%
+  kable(col.names = c("Decade", "Minimum", "Median", "Mean", "StDev", "Maximum"),
+        caption = "Annual carbon emissions")
+```
+
+
+\vspace{24pt}
+
+## Printed kable with formatting (numeric)
+```{r}
+table1 %>%
+  kable(col.names = c("Decade", "Minimum", "Median", "Mean", "StDev", "Maximum"),
+        caption = "Annual carbon emissions",
+        digits = 1,
+        align = "cccccc")
+```
+
+
+\newpage
+
+## Printed tibble (numeric)
+```{r}
+table2 
+```
+
+
+\vspace{24pt}
+
+## Printed kable (numeric)
+```{r}
+table2 %>%
+  kable()
+```
+
+
+\newpage
+
+## Printed kable with variable names and caption (numeric)
+```{r}
+table2 %>%
+  kable(col.names = c("Decade", "Minimum carbon", "Median carbon", "Mean carbon", "StDev carbon", "Maximum carbon", 
+                      "Minimum anomaly", "Median anomaly", "Mean anomaly", "StDev anomaly", "Maximum anomaly"),
+        caption = "Annual carbon emissions and global temperature anomalies")
+```
+
+
+\vspace{24pt}
+
+## Printed kable with formatting (numeric)
+```{r}
+table2 %>%
+  kable(col.names = c("Decade", "Minimum carbon", "Median carbon", "Mean carbon", "StDev carbon", "Maximum carbon", 
+                      "Minimum anomaly", "Median anomaly", "Mean anomaly", "StDev anomaly", "Maximum anomaly"),
+        caption = "Annual carbon emissions and global temperature anomalies",
+        digits = 1,
+        align = "ccccccccccc")
+```
+
+
+\vspace{24pt}
+
+## Printed kable with formatting (numeric)
+```{r}
+table2 %>%
+  select(decade, minco2:maxco2) %>%
+  kable(col.names = c("Decade", "Minimum carbon", "Median carbon", "Mean carbon", "StDev carbon", "Maximum carbon"),
+        caption = "Annual carbon emissions and global temperature anomalies",
+        digits = 1,
+        align = "ccccccccccc")
+
+table2 %>%
+  select(decade, mintempa:maxtempa) %>%
+  kable(col.names = c("Decade", "Minimum anomaly", "Median anomaly", "Mean anomaly", "StDev anomaly", "Maximum anomaly"),
+        digits = 1,
+        align = "ccccccccccc")
+```
+
+
+
+
+
+\newpage
+
+## Printed data frame (character)
+```{r}
+table3
+```
+
+
+\vspace{24pt}
+
+## Printed kable with variable names and caption (character)
+```{r}
+table3 %>%
+  kable(col.names = c("Variable name", "Variable description"),
+        caption = "Data dictionary")
+```
+
+
+\newpage
+
+## Printed kable with kableExtra formatting (character)
+```{r}
+library(kableExtra)
+
+table3 %>%
+  kable(col.names = c("Variable name", "Variable description"),
+        caption = "Data dictionary")
+```
+
+
+\newpage
+
+## Printed kable with kableExtra formatting (character)
+```{r}
+table3 %>%
+  kable(col.names = c("Variable name", "Variable description"),
+        caption = "Data dictionary",
+        booktabs = TRUE,
+        linesep = "\\addlinespace") %>%
+  kable_styling(latex_options = "hold_position", 
+                full_width=TRUE) %>%
+  column_spec(1, width="1.5in") 
+```
+
+
+\vspace{24pt}
+
+## Printed kable with kableExtra formatting (numeric)
+```{r}
+table2 %>%
+  select(decade, meanco2:sdco2, meantempa:sdtempa) %>%
+  kable(col.names = c("Decade", "Mean", "StDev", "Mean", "StDev"),
+        caption = "Annual carbon emissions and global temperature anomalies",
+        digits = 1,
+        align = "ccccc",
+        booktabs = TRUE,
+        linesep = "") %>%
+  kable_styling(latex_options = "hold_position") %>%
+  add_header_above(c(" " = 1, "Carbon" = 2, "Temp anomaly" = 2))
+```
+
+
