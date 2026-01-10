@@ -8,3 +8,4 @@ To view the slides on your local machine, you must
 5. Hit `Esc` to see the slide previews.
 6. Hit the blue burger icon in the bottom left to see the presentation outline.
 7. Use the arrow keys to advance or rewind the slides.
+8. If you open the `.qmd` files in [Positron](https://posit.co/products/ide/positron/), you can execute code chunks by hitting the play button or execute a single line by placing the cursor on that line and hitting `CTRL+Enter`.
