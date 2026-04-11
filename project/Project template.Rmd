@@ -1,0 +1,254 @@
+---
+title: "Project Part 1"
+fontsize: 12pt
+geometry: margin=1in
+output:
+  pdf_document: default
+  word_document: default
+urlcolor: black
+header-includes:
+- \usepackage{setspace}
+- \onehalfspacing
+---
+**Maryam Imran**  
+
+
+**Repository URL:** https://github.com/UVA-STAT3080/student-Sp26
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, highlight=FALSE)
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(tidyverse)
+library(knitr)
+
+unemp <- read_csv("state_unemployment.csv")
+
+unemp_long <- unemp %>%
+  pivot_longer(cols = `2019`:`2024`,
+               names_to = "Year",
+               values_to = "Rate") %>%
+  mutate(Year = as.integer(Year))
+```
+
+
+## Introduction
+
+The unemployment rate is one of the most closely watched indicators of 
+economic health in the United States. While national figures dominate 
+headlines, state-level rates can vary substantially, reflecting differences 
+in industry composition, demographics, and regional economic conditions. 
+This report investigates the following research question: **How do annual 
+unemployment rates vary across U.S. states and Census regions, and how have 
+these rates changed from 2019 to 2024?**
+
+This time window spans the pre-pandemic economy (2019), the COVID-19 labor 
+market shock (2020), and the subsequent recovery period (2021--2024). 
+Understanding geographic patterns in unemployment can inform economic policy 
+and highlight which regions are most vulnerable to major labor market 
+disruptions.
+
+
+## Data Summary
+
+The data come from the Bureau of Labor Statistics (BLS) Local Area 
+Unemployment Statistics (LAUS) program, a federal-state cooperative effort 
+administered by the U.S. Department of Labor. The program produces annual 
+estimates of unemployment for all 50 U.S. states and the District of 
+Columbia, derived by combining data from the Current Population Survey (CPS), 
+the Current Employment Statistics (CES) survey, and state unemployment 
+insurance (UI) systems. Because estimates are produced for every state and 
+D.C., the data represent the entire target population of U.S. state-level 
+jurisdictions, not a sample.
+
+Annual average unemployment rates for 2019 through 2024 were compiled from 
+four official BLS annual averages news releases (see References). A Region 
+variable was added using the U.S. Census Bureau's standard four-region 
+classification (Northeast, South, Midwest, West).
+
+Two limitations are worth noting. First, LAUS estimates are periodically 
+revised as benchmark data become available. Second, the unemployment rate 
+excludes discouraged workers who have stopped searching for employment, which 
+may understate true labor market weakness during severe downturns. Despite 
+these limitations, the data are appropriate for the research question because 
+they provide consistent, official government estimates across three 
+economically distinct periods.
+\newpage
+
+
+## Exploratory Analysis
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(kableExtra)
+
+# Numerical Summary 1: Regional statistics for 2024
+region_summary <- unemp %>%
+  group_by(Region) %>%
+  summarise(
+    N      = n(),
+    Mean   = round(mean(`2024`, na.rm = TRUE), 2),
+    Median = round(median(`2024`, na.rm = TRUE), 2),
+    SD     = round(sd(`2024`, na.rm = TRUE), 2),
+    Min    = round(min(`2024`, na.rm = TRUE), 2),
+    Max    = round(max(`2024`, na.rm = TRUE), 2),
+    .groups = "drop"
+  ) %>%
+  arrange(desc(Mean))
+
+kable(region_summary,
+      caption = "\\textbf{Summary Statistics of State Unemployment Rates (\\%) by Census Region, 2024}",
+      col.names = c("Region", "N", "Mean", "Median", "Std Dev", "Min", "Max"),
+      align = "lrrrrrr",
+      booktabs = TRUE) %>%
+  kable_styling(latex_options = c("striped", "hold_position"),
+                full_width = FALSE,
+                font_size = 13) %>%
+  column_spec(1, width = "2.5cm") %>%
+  column_spec(2:7, width = "1.5cm")
+```
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+library(kableExtra)
+
+# Numerical Summary 2: Five highest and five lowest states in 2024
+top5_high <- unemp %>%
+  arrange(desc(`2024`)) %>%
+  slice(1:5) %>%
+  select(State, Region, `2024`) %>%
+  mutate(Group = "Highest 5")
+
+top5_low <- unemp %>%
+  arrange(`2024`) %>%
+  slice(1:5) %>%
+  select(State, Region, `2024`) %>%
+  mutate(Group = "Lowest 5")
+
+kable(bind_rows(top5_high, top5_low),
+      caption = "\\textbf{Five Highest and Five Lowest State Unemployment Rates, 2024}",
+      col.names = c("State", "Census Region", "Rate (%)", "Group"),
+      align = "llrl",
+      booktabs = TRUE,
+      longtable = FALSE) %>%
+  kable_styling(latex_options = c("striped", "hold_position", "scale_down"),
+                full_width = FALSE,
+                font_size = 13) %>%
+  column_spec(1, width = "3.5cm") %>%
+  column_spec(2, width = "3cm") %>%
+  column_spec(3:4, width = "2cm")
+```
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height=4, fig.width=7, fig.pos="H", fig.cap="Distribution of state unemployment rates by Census region in 2019 (pre-pandemic) and 2024. Each box shows the median, interquartile range, and spread of state rates within the region. Source: BLS LAUS Program (2025)."}
+# Graphical Summary 1: Side by side boxplots 2019 vs 2024
+unemp_long %>%
+  filter(Year %in% c(2019, 2024)) %>%
+  mutate(Year = factor(Year)) %>%
+  ggplot(aes(x = Region, y = Rate, fill = Year)) +
+  geom_boxplot(width = 0.5, outlier.shape = 21,
+               outlier.size = 2, alpha = 0.85) +
+  scale_fill_manual(values = c("2019" = "#B07AA1",
+                               "2024" = "#4E79A7")) +
+  labs(
+    title    = "Unemployment Rates Rose Across All U.S. Regions from 2019 to 2024",
+    subtitle = "Comparing pre-pandemic and current state-level labor market conditions",
+    x        = "Census Region",
+    y        = "Unemployment Rate (%)",
+    fill     = "Year",
+    caption  = "Source: U.S. Bureau of Labor Statistics, LAUS Program (2025)"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(legend.position = "top",
+        legend.title = element_text(face = "bold"),
+        plot.title = element_text(face = "bold", size = 11),
+        plot.subtitle = element_text(size = 9, color = "gray40"),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.x = element_blank(),
+        axis.title = element_text(size = 12),
+        axis.text = element_text(size = 10))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height=5, fig.width=7, fig.pos="H", fig.cap="Average annual state unemployment rate by Census region from 2019 to 2024. Each panel shows one region's trend. The sharp 2020 spike reflects the COVID-19 pandemic. Source: BLS LAUS Program (2025)."}
+# Graphical Summary 2: Faceted line chart by region 2019-2024
+unemp_long %>%
+  group_by(Region, Year) %>%
+  summarise(Mean_Rate = mean(Rate, na.rm = TRUE), .groups = "drop") %>%
+  ggplot(aes(x = Year, y = Mean_Rate)) +
+  geom_line(linewidth = 1.3, color = "#4E79A7") +
+  geom_point(size = 3.5, color = "#4E79A7") +
+  geom_area(alpha = 0.15, fill = "#4E79A7") +
+  facet_wrap(~Region, nrow = 2) +
+  scale_x_continuous(breaks = 2019:2024) +
+  scale_y_continuous(limits = c(2, 11),
+                     breaks = seq(2, 11, by = 2)) +
+  labs(
+    title   = "COVID-19 Caused a Sharp Spike in Unemployment Across All Regions",
+    subtitle = "Average state unemployment rate by Census region, 2019-2024",
+    x       = "Year",
+    y       = "Avg. Unemployment Rate (%)",
+    caption = "Source: U.S. Bureau of Labor Statistics, LAUS Program (2025)"
+  ) +
+  theme_minimal(base_size = 11) +
+  theme(plot.title = element_text(face = "bold", size = 11),
+        plot.subtitle = element_text(size = 9, color = "gray40"),
+        strip.text = element_text(face = "bold", size = 11),
+        panel.grid.minor = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1))
+```
+\newpage
+
+
+## Conclusions
+
+The exploratory analysis reveals several notable patterns in U.S. state-level
+unemployment rates across the 2019--2024 period.
+
+**Regional variation.** Table 1 shows that the West had the highest mean
+unemployment rate in 2024 at 4.02%, driven largely by California and Nevada,
+whose large labor forces are concentrated in industries sensitive to economic
+cycles. The Midwest had the lowest mean rate at 3.46% and the smallest
+standard deviation, indicating both lower unemployment and greater consistency
+across its states.
+
+**State-level extremes.** Table 2 confirms that the five highest-unemployment
+states in 2024 were Nevada (5.6%), California (5.3%), District of Columbia
+(5.2%), Kentucky (5.1%), and Illinois (5.0%). The five lowest were South Dakota
+(1.8%), Vermont (2.3%), North Dakota (2.4%), New Hampshire (2.6%), and Nebraska
+(2.8%), predominantly small Midwest and Northeast states with tight labor markets.
+
+**COVID-19 shock and recovery.** Figure 2 shows a dramatic spike in 2020 across
+all four regions. The West experienced the sharpest increase, driven by Hawaii
+and Nevada whose tourism-dependent economies were hit hardest by pandemic
+shutdowns. All regions recovered close to pre-pandemic levels by 2022, though
+the West remained the highest through 2024.
+
+**Implications for Part 2.** These patterns suggest that Census region explains
+a meaningful portion of state-level unemployment variation. A formal test of
+whether mean unemployment rates differ significantly across regions will be
+pursued in Part 2.
+
+
+
+
+
+\newpage
+
+## References
+
+Bureau of Labor Statistics, U.S. Department of Labor. (2021). *Regional and 
+State Unemployment -- 2020 Annual Averages* (USDL-21-0363). Retrieved from
+https://www.bls.gov/news.release/archives/srgune_03032021.pdf
+
+Bureau of Labor Statistics, U.S. Department of Labor. (2023). *Regional and 
+State Unemployment -- 2022 Annual Averages* (USDL-23-0397). Retrieved from
+https://www.bls.gov/news.release/archives/srgune_03012023.pdf
+
+Bureau of Labor Statistics, U.S. Department of Labor. (2025). *Regional and 
+State Unemployment -- 2024 Annual Averages* (USDL-25-0294). Retrieved from
+https://www.bls.gov/news.release/pdf/srgune.pdf
+
+U.S. Census Bureau. (2024). *Census Regions and Divisions of the United 
+States.* Retrieved from
+https://www2.census.gov/geo/pdfs/maps-data/maps/reference/us_regdiv.pdf
+
+*AI Attribution: Portions of this report including the R Markdown structure, 
+code, and written prose were drafted with assistance from Claude (Anthropic, 
+claude.ai). All data values were verified against official BLS publications. 
+All output was reviewed and edited by the author in accordance with UVA 
+academic integrity guidelines.*
