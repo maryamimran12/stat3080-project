@@ -1,0 +1,186 @@
+---
+title: "Project Part 2"
+author: "Maryam Imran"
+fontsize: 12pt
+geometry: margin=1in
+urlcolor: black
+output: pdf_document
+header-includes:
+- \usepackage{setspace}
+- \onehalfspacing
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, highlight=FALSE)
+```
+
+**Repository URL:** https://github.com/maryamimran12/stat3080-project
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+# Load required packages
+library(tidyverse)
+
+# Read in the unemployment data (wide format: one column per year)
+unemp <- read_csv("state_unemployment.csv")
+
+# Pivot to long format and convert Year to integer
+unemp_long <- unemp %>%
+  pivot_longer(cols = `2019`:`2024`, names_to = "Year", values_to = "Rate") %>%
+  mutate(Year = as.integer(Year))
+
+# Filter to 2024 only for this analysis
+unemp_2024 <- unemp_long %>%
+  filter(Year == 2024)
+```
+
+## Introduction
+
+This report continues the analysis from Part 1, which explored how annual unemployment
+rates vary across U.S. states and Census regions. The exploratory analysis revealed that
+in 2024, the West had the highest mean unemployment rate (4.02%) and the Midwest the
+lowest (3.46%), with notable variation in spread across regions. This report formally tests
+whether those regional differences are statistically significant.
+
+**Research question:** Do mean annual unemployment rates differ significantly across U.S.
+Census regions in 2024?
+
+## Methods
+
+A one-way analysis of variance (ANOVA) is used to test whether at least one Census
+region has a different mean unemployment rate from the others in 2024. ANOVA is
+appropriate here because the response variable (state unemployment rate) is continuous,
+there are four independent groups (Northeast, South, Midwest, West), and the goal is to
+compare means across more than two groups using a single standalone procedure.
+
+The hypotheses are:
+
+$$H_0: \mu_{\text{NE}} = \mu_{\text{S}} = \mu_{\text{MW}} = \mu_{\text{W}}$$
+$$H_a: \text{At least one regional mean unemployment rate differs from the others}$$
+
+A significance level of $\alpha = 0.05$ is used.
+
+**Assumption verification.** One-way ANOVA requires (1) independence of observations,
+(2) approximate normality within each group, and (3) equal variances across groups.
+
+*Independence:* Each observation is a U.S. state or D.C. States are distinct geographic
+and economic units; their unemployment rates are collected independently by the BLS LAUS
+program. This assumption is reasonably met.
+
+*Normality:* With group sizes ranging from 9 (Northeast) to 17 (South), the Central Limit
+Theorem cannot be invoked. Normal Q-Q plots for each region are examined instead
+(Figure 1). All four plots show points tracking closely along the reference line with no
+severe departures, supporting approximate normality within each region.
+
+*Equal variances:* The standard deviations from Part 1 (Midwest: 0.96, Northeast: 0.79,
+West: 0.84, South: 0.68) are all within a factor of 1.5 of one another. The residual plot
+(Figure 2) shows no systematic fanning or clustering across groups. The equal variance
+assumption is reasonably satisfied.
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height=3.5, fig.width=6.5, fig.cap="Normal Q-Q plots of 2024 state unemployment rates by Census region. Points track closely along the reference line in all four regions, supporting approximate normality."}
+# Q-Q plots by region to assess normality assumption
+ggplot(unemp_2024, aes(sample = Rate)) +
+  stat_qq(color = "#4E79A7", size = 1.8) +
+  stat_qq_line(color = "gray40", linewidth = 0.7) +
+  facet_wrap(~Region, nrow = 2) +
+  labs(
+    title = "Figure 1: Normal Q-Q Plots by Census Region (2024)",
+    x = "Theoretical Quantiles",
+    y = "Sample Quantiles (Unemployment Rate %)"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(plot.title = element_text(face = "bold", size = 10),
+        strip.text = element_text(face = "bold"))
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE, fig.height=2.5, fig.width=6, fig.cap="Residuals from the one-way ANOVA model plotted against fitted values (regional means). The spread of residuals is similar across all four regions, supporting the equal variance assumption."}
+# Fit the ANOVA model to extract residuals for assumption checking
+fit_check <- aov(Rate ~ Region, data = unemp_2024)
+
+# Residual plot to assess equal variance assumption
+data.frame(
+  Fitted = fitted(fit_check),
+  Residuals = residuals(fit_check),
+  Region = unemp_2024$Region
+) %>%
+  ggplot(aes(x = Fitted, y = Residuals, color = Region)) +
+  geom_point(size = 2.2) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray50") +
+  labs(
+    title = "Figure 2: Residuals vs. Fitted Values",
+    x = "Fitted Values (Regional Mean Unemployment Rate %)",
+    y = "Residuals"
+  ) +
+  theme_minimal(base_size = 10) +
+  theme(plot.title = element_text(face = "bold", size = 10))
+```
+
+\newpage
+
+## Results
+
+```{r}
+# One-way ANOVA: test whether mean unemployment rate differs across Census regions
+# Response: 2024 state unemployment rate (continuous)
+# Factor: Census region (4 levels: Midwest, Northeast, South, West)
+anova_result <- aov(Rate ~ Region, data = unemp_2024)
+
+# Display the ANOVA table
+summary(anova_result)
+```
+
+The ANOVA table shows an F-statistic of `r round(summary(anova_result)[[1]]$"F value"[1], 2)`
+on 3 and `r summary(anova_result)[[1]]$Df[2]` degrees of freedom, with a p-value of
+`r round(summary(anova_result)[[1]]$"Pr(>F)"[1], 4)`. Since this p-value
+`r ifelse(summary(anova_result)[[1]]$"Pr(>F)"[1] < 0.05, "is less than", "exceeds")`
+$\alpha = 0.05$, the result is
+`r ifelse(summary(anova_result)[[1]]$"Pr(>F)"[1] < 0.05, "statistically significant", "not statistically significant")`.
+We `r ifelse(summary(anova_result)[[1]]$"Pr(>F)"[1] < 0.05, "reject $H_0$ and conclude that at least one Census region has a mean unemployment rate that differs from the others in 2024.", "fail to reject $H_0$; the data do not provide sufficient evidence that mean unemployment rates differ across Census regions in 2024.")`
+
+## Conclusions
+
+The one-way ANOVA provides
+`r ifelse(summary(anova_result)[[1]]$"Pr(>F)"[1] < 0.05, "statistically significant evidence", "insufficient evidence")`
+that mean state unemployment rates differ across U.S. Census regions in 2024
+(F = `r round(summary(anova_result)[[1]]$"F value"[1], 2)`,
+p = `r round(summary(anova_result)[[1]]$"Pr(>F)"[1], 4)`).
+In practical terms, while the exploratory analysis in Part 1 revealed descriptive differences
+in regional means — the West averaging 4.02% and the Midwest 3.46% — the within-region
+variability is large enough that these differences are not statistically distinguishable at the
+0.05 level. Census region alone does not appear to be a statistically significant predictor
+of state unemployment rates in 2024.
+
+**Limitations.** First, the ANOVA identifies that at least one regional mean differs but
+does not specify which pairs differ; a post-hoc procedure (e.g., Tukey HSD) would be
+needed for pairwise comparisons. Second, the analysis treats D.C. as part of the South,
+which may inflate that region's mean given D.C.'s uniquely concentrated federal labor
+market. Third, unemployment rates are model-based estimates subject to periodic BLS
+revision, introducing a small degree of measurement uncertainty.
+
+**Generalizability.** Because the BLS LAUS data cover all 50 states and D.C. — not a
+sample — the results describe the actual 2024 population of U.S. state-level labor markets.
+Caution is warranted in generalizing across years, as regional patterns shift with economic
+cycles, policy changes, and external shocks such as the COVID-19 pandemic.
+
+\newpage
+
+## References
+
+Bureau of Labor Statistics, U.S. Department of Labor. (2021). *Regional and State
+Unemployment -- 2020 Annual Averages* (USDL-21-0363). Retrieved from
+https://www.bls.gov/news.release/archives/srgune_03032021.pdf
+
+Bureau of Labor Statistics, U.S. Department of Labor. (2023). *Regional and State
+Unemployment -- 2022 Annual Averages* (USDL-23-0397). Retrieved from
+https://www.bls.gov/news.release/archives/srgune_03012023.pdf
+
+Bureau of Labor Statistics, U.S. Department of Labor. (2025). *Regional and State
+Unemployment -- 2024 Annual Averages* (USDL-25-0294). Retrieved from
+https://www.bls.gov/news.release/pdf/srgune.pdf
+
+U.S. Census Bureau. (2024). *Census Regions and Divisions of the United States*.
+Retrieved from https://www2.census.gov/geo/pdfs/maps-data/maps/reference/us_regdiv.pdf
+
+AI Attribution: Portions of this report including the R Markdown structure, code, and
+written prose were drafted with assistance from Claude (Anthropic, claude.ai). All data
+values were verified against official BLS publications. All output was reviewed and edited
+by the author in accordance with UVA academic integrity guidelines.
