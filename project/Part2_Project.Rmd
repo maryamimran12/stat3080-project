@@ -149,12 +149,7 @@ variability is large enough that these differences are not statistically disting
 0.05 level. Census region alone does not appear to be a statistically significant predictor
 of state unemployment rates in 2024.
 
-**Limitations.** First, the ANOVA identifies that at least one regional mean differs but
-does not specify which pairs differ; a post-hoc procedure (e.g., Tukey HSD) would be
-needed for pairwise comparisons. Second, the analysis treats D.C. as part of the South,
-which may inflate that region's mean given D.C.'s uniquely concentrated federal labor
-market. Third, unemployment rates are model-based estimates subject to periodic BLS
-revision, introducing a small degree of measurement uncertainty.
+**Limitations.** First, had the result been significant, the ANOVA would not identify which specific pairs of regions differ; a post-hoc procedure (e.g., Tukey HSD) would be needed for pairwise comparisons. Second, the analysis treats D.C. as part of the South, which may inflate that region's mean given D.C.'s uniquely concentrated federal labor market. Third, unemployment rates are model-based estimates subject to periodic BLS revision, introducing a small degree of measurement uncertainty.
 
 **Generalizability.** Because the BLS LAUS data cover all 50 states and D.C. — not a
 sample — the results describe the actual 2024 population of U.S. state-level labor markets.
